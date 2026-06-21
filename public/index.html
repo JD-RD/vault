@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vault</title>
+  <link rel="stylesheet" href="/style.css?v=3">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Vault">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#161b22">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar overlay (mobile) -->
+    <div id="sidebar-overlay" class="hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <button id="btn-hamburger" class="icon-btn mobile-only" aria-label="Menu">☰</button>
+        <h1><span class="icon">◈</span> Vault</h1>
+        <button id="btn-index" class="icon-btn" title="Re-indexer">⟳</button>
+      </div>
+
+      <div id="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search-input" placeholder="Chercher dans les docs…" autocomplete="off">
+        <button id="btn-clear" class="icon-btn" title="Effacer">✕</button>
+      </div>
+
+      <div id="filter-bar">
+        <select id="dir-filter">
+          <option value="">Tous les dossiers</option>
+        </select>
+      </div>
+
+      <div id="tags-section">
+        <h3 class="section-title">Tags</h3>
+        <div id="tag-cloud"></div>
+      </div>
+
+      <div id="stats-bar">
+        <span id="doc-count">0 docs</span>
+        <span id="dir-count">0 dossiers</span>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main id="main">
+      <!-- Top bar (mobile) -->
+      <div id="mobile-topbar" class="mobile-only">
+        <button id="btn-hamburger-main" class="icon-btn" aria-label="Menu">☰</button>
+        <div id="mobile-search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="mobile-search-input" placeholder="Chercher…" autocomplete="off">
+          <button id="mobile-btn-clear" class="icon-btn" title="Effacer">✕</button>
+        </div>
+      </div>
+
+      <!-- List view -->
+      <div id="list-view">
+        <div id="mobile-filter-bar" class="mobile-only">
+          <select id="mobile-dir-filter">
+            <option value="">Tous les dossiers</option>
+          </select>
+        </div>
+        <div id="card-grid"></div>
+      </div>
+
+      <!-- Document view -->
+      <div id="doc-view" class="hidden">
+        <div id="doc-toolbar">
+          <button id="btn-back" class="btn">←</button>
+          <div id="doc-title-group">
+            <span id="doc-title-display"></span>
+            <span id="doc-meta"></span>
+          </div>
+          <div id="doc-actions">
+            <button id="btn-edit" class="btn btn-primary">✎</button>
+            <a id="btn-open-file" class="btn" target="_blank" title="Ouvrir le fichier">↗</a>
+          </div>
+        </div>
+        <div id="doc-content" class="markdown-body"></div>
+      </div>
+
+      <!-- Edit view -->
+      <div id="edit-view" class="hidden">
+        <div id="edit-toolbar">
+          <button id="edit-back" class="btn">←</button>
+          <span id="edit-title"></span>
+          <div id="edit-actions">
+            <button id="edit-preview-toggle" class="btn">Aperçu</button>
+            <button id="edit-save" class="btn btn-primary">💾</button>
+          </div>
+        </div>
+        <div id="edit-container">
+          <div id="edit-toolbar-format">
+            <button data-cmd="header" title="Titre">H</button>
+            <button data-cmd="bold" title="Gras"><b>B</b></button>
+            <button data-cmd="italic" title="Italique"><i>I</i></button>
+            <button data-cmd="link" title="Lien">🔗</button>
+            <button data-cmd="code" title="Code">&lt;/&gt;</button>
+            <button data-cmd="list" title="Liste">•</button>
+            <button data-cmd="hr" title="Ligne">—</button>
+          </div>
+          <textarea id="edit-textarea" spellcheck="false"></textarea>
+          <div id="preview-pane" class="hidden markdown-body"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+  <script src="/app.js?v=2"></script>
+</body>
+</html>

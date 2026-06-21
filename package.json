@@ -1,0 +1,18 @@
+{
+  "name": "vault",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Markdown research vault — browse, search, visualize & edit",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["markdown", "notes", "vault", "research"],
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "express": "^5.1.0",
+    "fuse.js": "^7.1.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.11"
+  }
+}
