@@ -174,8 +174,6 @@ async function openDoc(filePath) {
   const tags = (state.currentDoc.tags || []).join(', ');
   $('#doc-meta').textContent = [state.currentDoc.created, tags, `${state.currentDoc.size} o`].filter(Boolean).join(' · ');
   $('#doc-content').innerHTML = state.currentDoc.html;
-  $('#btn-open-file').href = `file://${state.currentDoc.path}`;
-
   // Scroll to top
   $('#main').scrollTop = 0;
 }
@@ -293,6 +291,65 @@ $('#btn-back').addEventListener('click', () => {
   state.currentDoc = null;
   showView('list');
   applyFilter();
+});
+
+// Copy markdown to clipboard
+$('#btn-copy').addEventListener('click', async () => {
+  if (!state.currentDoc) return;
+  const btn = $('#btn-copy');
+  try {
+    await navigator.clipboard.writeText(state.currentDoc.body);
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = '📋'; }, 2000);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = state.currentDoc.body;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = '📋'; }, 2000);
+  }
+});
+
+// Share doc as GitHub Gist
+$('#btn-share').addEventListener('click', async () => {
+  if (!state.currentDoc) return;
+  const btn = $('#btn-share');
+  btn.textContent = '…';
+  try {
+    const res = await fetch('/api/share-gist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: state.currentDoc.path })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    // Copie avec fallback pour iOS HTTP
+    try {
+      await navigator.clipboard.writeText(data.url);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = data.url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    btn.textContent = '✓ Lié';
+    setTimeout(() => { btn.textContent = '🔗'; }, 3000);
+  } catch (e) {
+    btn.textContent = '✗';
+    setTimeout(() => { btn.textContent = '🔗'; }, 3000);
+    // Afficher l'URL dans un prompt pour copie manuelle
+    const url = e.data?.url || '';
+    prompt('Lien de partage (copie manuelle):', url || 'Erreur: ' + e.message);
+  }
 });
 
 $('#btn-edit').addEventListener('click', openEdit);

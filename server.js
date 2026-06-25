@@ -4,6 +4,7 @@ const path = require('path');
 const chokidar = require('chokidar');
 const matter = require('gray-matter');
 const { marked } = require('marked');
+const { execFile } = require('child_process');
 
 // Disable raw HTML in markdown to prevent XSS
 marked.use({
@@ -246,6 +247,122 @@ app.get('/api/tags', (req, res) => {
   const tags = Object.entries(tagMap).map(([name, count]) => ({ name, count }));
   tags.sort((a, b) => b.count - a.count);
   res.json(tags);
+});
+
+// ── GitHub Gist sharing ──────────────────────────────────────
+const SHARES_FILE = path.join(__dirname, '.vault-shares.json');
+const SHARE_TTL_MS = 72 * 60 * 60 * 1000; // 72h
+
+let shares = [];
+try { shares = JSON.parse(fs.readFileSync(SHARES_FILE, 'utf-8')); } catch { shares = []; }
+
+function saveShares() {
+  fs.writeFileSync(SHARES_FILE, JSON.stringify(shares, null, 2), 'utf-8');
+}
+
+function deleteGist(gistId) {
+  return new Promise((resolve) => {
+    execFile('gh', ['gist', 'delete', gistId], (err) => {
+      if (err) console.error(`[vault] Failed to delete gist ${gistId}: ${err.message}`);
+      else console.log(`[vault] Deleted expired gist ${gistId}`);
+      resolve();
+    });
+  });
+}
+
+function removeShare(gistId) {
+  shares = shares.filter(s => s.gist_id !== gistId);
+  saveShares();
+}
+
+// Nettoyage : supprime les Gists expirés et les retire du suivi
+async function cleanupExpiredShares() {
+  const now = Date.now();
+  const expired = shares.filter(s => new Date(s.expires_at).getTime() <= now);
+  if (expired.length === 0) return;
+
+  console.log(`[vault] Cleaning ${expired.length} expired share(s)...`);
+  for (const s of expired) {
+    await deleteGist(s.gist_id);
+    removeShare(s.gist_id);
+  }
+}
+
+// Planifie la suppression d'un partage dans le futur
+function scheduleShareExpiry(share) {
+  const delay = new Date(share.expires_at).getTime() - Date.now();
+  if (delay <= 0) {
+    // Déjà expiré, nettoyer immédiatement
+    deleteGist(share.gist_id).then(() => removeShare(share.gist_id));
+    return;
+  }
+  setTimeout(async () => {
+    await deleteGist(share.gist_id);
+    removeShare(share.gist_id);
+  }, delay);
+}
+
+// Au démarrage : nettoyer les partages expirés
+cleanupExpiredShares();
+
+// Vérification périodique (toutes les heures)
+setInterval(cleanupExpiredShares, 60 * 60 * 1000);
+
+// API: share doc as GitHub Gist
+app.post('/api/share-gist', async (req, res) => {
+  const doc = docs.find(d => d.path === req.body.path);
+  if (!doc) return res.status(404).json({ error: 'Not found' });
+
+  try {
+    const filename = doc.title.replace(/[^a-z0-9]/gi, '_') + '.md';
+    const { stdout } = await new Promise((resolve, reject) => {
+      const child = execFile('gh', ['gist', 'create', '--filename', filename, '--desc', doc.title], {
+        maxBuffer: 1024 * 1024
+      }, (err, stdout, stderr) => {
+        if (err) reject(new Error(stderr.trim() || err.message));
+        else resolve({ stdout: stdout.trim() });
+      });
+      child.stdin.write(doc.body);
+      child.stdin.end();
+    });
+
+    const url = stdout;
+    const gistId = url.split('/').pop();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + SHARE_TTL_MS);
+
+    const share = {
+      id: gistId,
+      path: doc.path,
+      title: doc.title,
+      url,
+      gist_id: gistId,
+      created_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    };
+    shares.push(share);
+    saveShares();
+
+    // Planifier la suppression automatique
+    scheduleShareExpiry(share);
+
+    res.json({ url, gist_id: gistId, expires_at: share.expires_at });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: list active shares
+app.get('/api/shares', (req, res) => {
+  const now = new Date();
+  res.json(shares.map(s => ({
+    id: s.id,
+    title: s.title,
+    url: s.url,
+    created_at: s.created_at,
+    expires_at: s.expires_at,
+    expires_in_hours: Math.round((new Date(s.expires_at) - now) / 3600000),
+  })));
 });
 
 // ── Start ───────────────────────────────────────────────────
