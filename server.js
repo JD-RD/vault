@@ -252,8 +252,8 @@ app.get('/api/tags', (req, res) => {
 // ── GitHub Gist sharing ──────────────────────────────────────
 const SHARES_FILE = path.join(__dirname, '.vault-shares.json');
 const SHARE_TTL_DEFAULT_HOURS = 72; // 72h par défaut
-const SHARE_TTL_MIN_HOURS = 1;
-const SHARE_TTL_MAX_HOURS = 168; // 7 jours
+const SHARE_TTL_MIN_HOURS = 0;      // 0 = pas d'expiration
+const SHARE_TTL_MAX_HOURS = 168;    // 7 jours
 
 let shares = [];
 try { shares = JSON.parse(fs.readFileSync(SHARES_FILE, 'utf-8')); } catch { shares = []; }
@@ -280,7 +280,7 @@ function removeShare(gistId) {
 // Nettoyage : supprime les Gists expirés et les retire du suivi
 async function cleanupExpiredShares() {
   const now = Date.now();
-  const expired = shares.filter(s => new Date(s.expires_at).getTime() <= now);
+  const expired = shares.filter(s => s.expires_at && new Date(s.expires_at).getTime() <= now);
   if (expired.length === 0) return;
 
   console.log(`[vault] Cleaning ${expired.length} expired share(s)...`);
@@ -315,17 +315,17 @@ app.post('/api/share-gist', async (req, res) => {
   const doc = docs.find(d => d.path === req.body.path);
   if (!doc) return res.status(404).json({ error: 'Not found' });
 
-  // Durée de vie : optionnelle, par défaut 72h, min 1h, max 168h (7 jours)
+  // Durée de vie : optionnelle, par défaut 72h. 0 = pas d'expiration, max 168h (7 jours)
   let ttlHours = SHARE_TTL_DEFAULT_HOURS;
   if (req.body.ttl_hours !== undefined) {
     ttlHours = parseInt(req.body.ttl_hours, 10);
     if (isNaN(ttlHours) || ttlHours < SHARE_TTL_MIN_HOURS || ttlHours > SHARE_TTL_MAX_HOURS) {
       return res.status(400).json({
-        error: `ttl_hours doit être entre ${SHARE_TTL_MIN_HOURS}h et ${SHARE_TTL_MAX_HOURS}h`
+        error: `ttl_hours doit être entre ${SHARE_TTL_MIN_HOURS}h (pas d'expiration) et ${SHARE_TTL_MAX_HOURS}h`
       });
     }
   }
-  const ttlMs = ttlHours * 60 * 60 * 1000;
+  const expiresAt = ttlHours > 0 ? new Date(Date.now() + ttlHours * 60 * 60 * 1000) : null;
 
   try {
     const filename = doc.title.replace(/[^a-z0-9]/gi, '_') + '.md';
@@ -342,8 +342,6 @@ app.post('/api/share-gist', async (req, res) => {
 
     const url = stdout;
     const gistId = url.split('/').pop();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + ttlMs);
 
     const share = {
       id: gistId,
@@ -352,14 +350,14 @@ app.post('/api/share-gist', async (req, res) => {
       url,
       gist_id: gistId,
       ttl_hours: ttlHours,
-      created_at: now.toISOString(),
-      expires_at: expiresAt.toISOString(),
+      created_at: new Date().toISOString(),
+      expires_at: expiresAt ? expiresAt.toISOString() : null,
     };
     shares.push(share);
     saveShares();
 
-    // Planifier la suppression automatique
-    scheduleShareExpiry(share);
+    // Planifier la suppression automatique (sauter si pas d'expiration)
+    if (expiresAt) scheduleShareExpiry(share);
 
     res.json({ url, gist_id: gistId, ttl_hours: ttlHours, expires_at: share.expires_at });
   } catch (err) {
@@ -374,10 +372,10 @@ app.get('/api/shares', (req, res) => {
     id: s.id,
     title: s.title,
     url: s.url,
-    ttl_hours: s.ttl_hours || SHARE_TTL_DEFAULT_HOURS,
+    ttl_hours: s.ttl_hours || (s.expires_at ? SHARE_TTL_DEFAULT_HOURS : 0),
     created_at: s.created_at,
     expires_at: s.expires_at,
-    expires_in_hours: Math.round((new Date(s.expires_at) - now) / 3600000),
+    expires_in_hours: s.expires_at ? Math.round((new Date(s.expires_at) - now) / 3600000) : null,
   })));
 });
 
