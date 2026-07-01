@@ -82,7 +82,18 @@
             <span id="doc-meta"></span>
           </div>
           <div id="doc-actions">
-            <button id="btn-share" class="btn" title="Partager via Gist">🔗</button>
+            <span id="share-ttl-group">
+              <select id="share-ttl" title="Durée de vie">
+                <option value="1">1h</option>
+                <option value="6">6h</option>
+                <option value="12">12h</option>
+                <option value="24">24h</option>
+                <option value="48">48h</option>
+                <option value="72" selected>72h</option>
+                <option value="168">7j</option>
+              </select>
+              <button id="btn-share" class="btn" title="Partager via Gist">🔗</button>
+            </span>
             <button id="btn-copy" class="btn" title="Copier le markdown">📋</button>
             <button id="btn-edit" class="btn btn-primary">✎</button>
           </div>

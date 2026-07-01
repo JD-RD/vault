@@ -319,12 +319,17 @@ $('#btn-copy').addEventListener('click', async () => {
 $('#btn-share').addEventListener('click', async () => {
   if (!state.currentDoc) return;
   const btn = $('#btn-share');
+  const ttlSelect = $('#share-ttl');
+  const ttlHours = parseInt(ttlSelect.value, 10);
   btn.textContent = '…';
   try {
     const res = await fetch('/api/share-gist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: state.currentDoc.path })
+      body: JSON.stringify({
+        path: state.currentDoc.path,
+        ttl_hours: ttlHours
+      })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);

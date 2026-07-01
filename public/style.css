@@ -351,6 +351,37 @@ a:hover { text-decoration: underline; }
   text-overflow: ellipsis;
 }
 #doc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+/* ── Share TTL selector ─────────────────────────────── */
+#share-ttl-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+#share-ttl-group select {
+  background: var(--surface);
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 8px 4px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  text-align: center;
+}
+#share-ttl-group select:focus { background: var(--bg3); }
+#share-ttl-group .btn {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
 #doc-content {
   padding: 20px;
   max-width: 780px;
