@@ -1,3 +1,4 @@
 node_modules/
 .vault-index.json
+.vault-shares.json
 config.json
