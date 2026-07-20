@@ -293,6 +293,36 @@ $('#btn-back').addEventListener('click', () => {
   applyFilter();
 });
 
+// Signal an error via GitHub Issues
+$('#btn-issue').addEventListener('click', () => {
+  if (!state.currentDoc) return;
+  const title = state.currentDoc.title;
+  const path = state.currentDoc.path;
+  const url = window.location.href;
+  const tags = (state.currentDoc.tags || []).join(', ');
+  const body =
+`**Document** : ${title}
+**Chemin** : ${path}
+${tags ? `**Tags** : ${tags}\n` : ''}**Page** : ${url}
+
+**Ce qui devrait être corrigé** :
+
+
+---
+_Page : ${title}_`;
+
+  // Copier dans le presse-papier
+  navigator.clipboard.writeText(body).then(() => {
+    const btn = $('#btn-issue');
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = orig; }, 3000);
+  }).catch(() => {});
+
+  // Ouvrir GitHub Issues dans un nouvel onglet
+  window.open('https://github.com/JD-RD/vault/issues/new', '_blank');
+});
+
 // Copy markdown to clipboard
 $('#btn-copy').addEventListener('click', async () => {
   if (!state.currentDoc) return;
