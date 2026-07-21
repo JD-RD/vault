@@ -310,6 +310,23 @@ cleanupExpiredShares();
 // Vérification périodique (toutes les heures)
 setInterval(cleanupExpiredShares, 60 * 60 * 1000);
 
+// ── Gist footer : lien de suggestion ──────────────────────────
+function buildGistFooter(title) {
+  const issueTitle = encodeURIComponent(`Suggestion: ${title}`);
+  const issueBody = encodeURIComponent(
+    `**Document** : ${title}\n\n` +
+    `**Proposition de modification** :\n\n` +
+    `\n\n---\n` +
+    `*Soumis depuis un Gist partagé via Vault*`
+  );
+  const issueUrl =
+    `https://github.com/JD-RD/vault/issues/new?title=${issueTitle}&body=${issueBody}`;
+
+  return `\n\n---\n🔄 **Vous voulez suggérer une correction ?**\n\n` +
+    `[Proposer une modification →](${issueUrl})\n\n` +
+    `*Généré par [Vault](https://github.com/JD-RD/vault)*\n`;
+}
+
 // API: share doc as GitHub Gist
 app.post('/api/share-gist', async (req, res) => {
   const doc = docs.find(d => d.path === req.body.path);
@@ -336,7 +353,7 @@ app.post('/api/share-gist', async (req, res) => {
         if (err) reject(new Error(stderr.trim() || err.message));
         else resolve({ stdout: stdout.trim() });
       });
-      child.stdin.write(doc.body);
+      child.stdin.write(doc.body + buildGistFooter(doc.title));
       child.stdin.end();
     });
 
